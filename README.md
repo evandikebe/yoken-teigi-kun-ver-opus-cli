@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.9.1
+# yoken-teigi-kun（要件定義君）v0.9.2
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -215,6 +215,9 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.9.2
+- **hooks を prompt ベースへ移行（Cowork 互換性修正）**: 旧 `hooks/hooks.json` は `python "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"` の command 型だったが、Cowork のフックランナーが `${CLAUDE_PLUGIN_ROOT}` を展開せず未展開リテラルが相対パス化して全 hook が失敗していた。`secret_guard`/`docs_readonly_guard`/`pii_check`/`spec_traceability` を **1本の PreToolUse prompt フック（LLM 判定型）に統合**し、パス参照依存を排除。`post_format` は prompt 化不可のため plugin-native hooks からは除外（CLI 手動配置用の .py は残置）
 
 ### v0.9.1
 - **Fable 提供終了に伴うモデル構成の見直し**: 最上位ゲート役 5 体（`spec-orchestrator` / `spec-critic` / `impl-orchestrator` / `impl-code-reviewer` / `impl-security-reviewer`）の frontmatter を `fable` から **`opus`** に変更し、Opus を最上位とする構成に統一。README のモデル表（opus 表記）と frontmatter の不整合も解消。エスカレーション経路は「高度な判断 → opus、実装作業 → sonnet」の 2 段構成
