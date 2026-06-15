@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.7.0
+# yoken-teigi-kun（要件定義君）v0.9.1
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -215,6 +215,9 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.9.1
+- **Fable 提供終了に伴うモデル構成の見直し**: 最上位ゲート役 5 体（`spec-orchestrator` / `spec-critic` / `impl-orchestrator` / `impl-code-reviewer` / `impl-security-reviewer`）の frontmatter を `fable` から **`opus`** に変更し、Opus を最上位とする構成に統一。README のモデル表（opus 表記）と frontmatter の不整合も解消。エスカレーション経路は「高度な判断 → opus、実装作業 → sonnet」の 2 段構成
 
 ### v0.9.0
 - **再開（レジューム）プロトコルを追加**: spec-orchestrator / impl-orchestrator が起動時に状態ファイル（`docs/_state/phase_status.md` / `docs/_impl_state/tickets/`）から現在地を自動判定し、「再開宣言」をしてから続行。中断チケットの owner クリア・差分起票ルールも明文化（SPEC_RULES Q-6 新設）
