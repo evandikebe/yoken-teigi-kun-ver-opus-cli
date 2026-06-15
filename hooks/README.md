@@ -6,7 +6,7 @@
 
 | ファイル | 役割 |
 |---|---|
-| `hooks.json` | **プラグイン用の hook 設定（prompt ベース）**。インストールするだけで自動有効。LLM 判定型なので `${CLAUDE_PLUGIN_ROOT}` 等のパス参照に依存せず、Cowork でもそのまま動く |
+| `hooks.json` | **プラグイン用の hook 設定（command 型）**。インストールするだけで自動有効。Claude Code(CLI) では `${CLAUDE_PLUGIN_ROOT}` が展開され .py が即時実行される（高速・決定論的）。※**Cowork は変数を展開しない**ため prompt 版を使う（後述） |
 | `settings.example.json` | 手動配置用。`.claude/settings.json` の雛形 |
 | `secret_guard.py` | PreToolUse(Write/Edit): API キー・トークンらしい値のコミットをブロック |
 | `docs_readonly_guard.py` | PreToolUse(Write/Edit): `docs/` 配下への書き込みをブロック(`docs/_impl_state/` は許可)。**`docs/_impl_state/.impl_active` マーカーがある時=実装フェーズ中のみ有効**（設計フェーズの docs/ 書き込みは妨げない） |
@@ -39,15 +39,18 @@ Copy-Item hooks/settings.example.json .claude/settings.json
 Claude Code を再起動すると hooks が有効になります。
 
 
-## prompt ベース hook について（v0.9.2〜）
+## 実行環境による hook 形式の使い分け（重要）
 
-`hooks/hooks.json` は **prompt ベース（LLM 判定型）の PreToolUse フック1本** に統合した。`secret_guard` / `docs_readonly_guard` / `pii_check` / `spec_traceability_check` の4つの判定を1つのプロンプトにまとめ、`Write`/`Edit`/`MultiEdit` の直前に LLM が内容を検査してブロック(シークレット混入・docs/ 直接編集)または警告(PII・@spec 欠落)する。
+`${CLAUDE_PLUGIN_ROOT}` の展開挙動が実行環境で異なるため、hook 形式を使い分ける。
 
-**なぜ command 型をやめたか**: 旧版は `python "${CLAUDE_PLUGIN_ROOT}/hooks/xxx.py"` 形式だったが、Cowork のフックランナーは `${CLAUDE_PLUGIN_ROOT}` を展開しないため、未展開リテラルが相対パス扱いになり全 hook が失敗していた。prompt ベースはスクリプトのパス参照が不要なのでこの問題が原理的に発生しない。
+| 環境 | 推奨 hook 形式 | 理由 |
+|---|---|---|
+| **Claude Code (CLI)** | **command 型（同梱の `hooks.json`）** | CLI は `${CLAUDE_PLUGIN_ROOT}` を正しく展開する。.py が即時実行され遅延ゼロ・決定論的。これが既定 |
+| **Cowork (デスクトップ)** | **prompt 型（別ビルド）** | Cowork は `${CLAUDE_PLUGIN_ROOT}` を展開しないため command 型は失敗する。LLM 判定型の prompt 版を使う |
 
-**トレードオフ**: prompt フックは `Write`/`Edit` のたびに LLM 評価が1回走るため、command 型より僅かに遅くコストがかかる。また prompt フックは `PreToolUse` のみ対応のため、`post_format`(保存後フォーマット)は hooks.json から外した。
+同梱の `hooks.json` は **command 型**（CLI 既定）。Cowork で使う場合は、4 つの判定を 1 本の PreToolUse prompt フックに統合した prompt 版 `hooks.json` に差し替えること（`secret_guard`/`docs_readonly_guard`/`pii_check`/`spec_traceability` を統合。`post_format` は prompt 化不可のため除外）。
 
-**.py スクリプトと settings.example.json は残置**: Claude Code(CLI) で手動配置する場合は従来どおり command 型(.py)が使える。その場合は下記『手動配置時』の手順を使う（CLI では `${CLAUDE_PLUGIN_ROOT}` も正しく展開される）。
+**なぜ分けるのか**: command 型は `python "${CLAUDE_PLUGIN_ROOT}/hooks/xxx.py"` のようにスクリプトの絶対パスを要する。Cowork のフックランナーは `${CLAUDE_PLUGIN_ROOT}` を展開しないので未展開リテラルが相対パス化し全 hook が失敗する。prompt 型はパス参照が不要なのでこの問題が起きない代わりに、Write/Edit ごとに LLM 評価が 1 回入り僅かに遅い。
 
 ## 動作の調整
 

@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.9.2
+# yoken-teigi-kun（要件定義君）v0.9.3
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -215,6 +215,9 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.9.3
+- **Claude Code(CLI) インストール対応 + hooks を command 型へ復帰**: `.claude-plugin/marketplace.json` を追加し、`/plugin marketplace add` → `/plugin install` で導入可能に。CLI は `${CLAUDE_PLUGIN_ROOT}` を展開するため、同梱 `hooks/hooks.json` を **command 型（.py 即時実行・遅延ゼロ）に戻した**。Cowork で使う場合は v0.9.2 の prompt 型 hooks に差し替える運用（hooks/README に環境別の使い分けを明記）
 
 ### v0.9.2
 - **hooks を prompt ベースへ移行（Cowork 互換性修正）**: 旧 `hooks/hooks.json` は `python "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"` の command 型だったが、Cowork のフックランナーが `${CLAUDE_PLUGIN_ROOT}` を展開せず未展開リテラルが相対パス化して全 hook が失敗していた。`secret_guard`/`docs_readonly_guard`/`pii_check`/`spec_traceability` を **1本の PreToolUse prompt フック（LLM 判定型）に統合**し、パス参照依存を排除。`post_format` は prompt 化不可のため plugin-native hooks からは除外（CLI 手動配置用の .py は残置）
