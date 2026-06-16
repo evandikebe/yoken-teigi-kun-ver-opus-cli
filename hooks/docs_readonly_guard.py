@@ -3,7 +3,10 @@
 docs_readonly_guard.py — Claude Code PreToolUse hook
 
 実装エージェントは docs/ 配下の仕様ドキュメントを編集してはいけない (IMPL_RULES R-3)。
-唯一の例外は docs/_impl_state/ 配下(実装側の状態管理)。
+例外は2つ: (1) docs/_impl_state/ 配下(実装側の状態管理)、(2) 変更管理フロー
+(spec-change-manager)が明示アンロック `docs/_impl_state/.docs_edit_unlock` を立てている間。
+これにより「実装変更に伴い docs も併せて正規に更新するエージェント」だけが docs/ を更新でき、
+それ以外の実装エージェントは引き続きブロックされる。
 
 このガードは **実装フェーズ中のみ** 有効。設計フェーズ(spec-orchestrator 等)は docs/ に
 書き込む必要があるため、マーカーファイル `docs/_impl_state/.impl_active` が存在する場合のみ
@@ -30,6 +33,20 @@ def _impl_phase_active(cwd: str | None) -> bool:
     base = Path(cwd) if cwd else Path.cwd()
     try:
         return (base / IMPL_ACTIVE_MARKER).exists()
+    except Exception:
+        return False
+
+
+# 変更管理フロー(spec-change-manager)が docs を正規に更新する間だけ立てる明示アンロック。
+# これがある間は docs/ ガードを通す(マーカー .impl_active 自体は触らない)。
+DOCS_EDIT_UNLOCK = "docs/_impl_state/.docs_edit_unlock"
+
+
+def _docs_edit_unlocked(cwd: str | None) -> bool:
+    """変更管理フローによる正規の docs 更新が許可されているか(明示アンロックの有無)。"""
+    base = Path(cwd) if cwd else Path.cwd()
+    try:
+        return (base / DOCS_EDIT_UNLOCK).exists()
     except Exception:
         return False
 
@@ -92,11 +109,14 @@ def main() -> int:
 
     blocked, sample = is_blocked(fp, cwd)
     if blocked:
+        # 変更管理フロー(spec-change-manager)が明示アンロックを立てている間は許可
+        if _docs_edit_unlocked(cwd):
+            return 0
         print("[docs_readonly_guard] docs/ 配下への書き込みをブロックしました。", file=sys.stderr)
         print(f"  対象: {fp}", file=sys.stderr)
         print(f"  該当: {sample}", file=sys.stderr)
         print("  ルール: references/IMPL_RULES.md R-3 (docs/ は読み取り専用、書けるのは docs/_impl_state/ のみ)", file=sys.stderr)
-        print("  対応: 仕様の更新は spec-orchestrator または人間に依頼。実装側の状態は docs/_impl_state/ に書く。", file=sys.stderr)
+        print("  対応: 仕様の更新は spec-change-manager の変更管理フロー(docs/_impl_state/.docs_edit_unlock を立てて更新)または人間に依頼。実装側の状態は docs/_impl_state/ に書く。", file=sys.stderr)
         return 2
     return 0
 

@@ -56,10 +56,11 @@
 - コミットメッセージにも仕様 ID を含める。例: `feat(F-009): implement attention-staff list endpoint`
 - これによりレビュー時に **仕様 → 実装 → テストの追跡が機械的に可能** になる。
 
-### R-3: docs/ は読み取り専用
+### R-3: docs/ は読み取り専用（変更管理フローのみ例外）
 
-- 実装エージェントは **`docs/` 配下に書き込み禁止**。仕様の更新は人間または設計エージェント（正式な変更は `spec-change-manager` の変更管理フロー = CR-XXX 起票 → 影響分析 → 更新 → spec-critic 再レビュー）の責務。
-- 例外: `docs/_impl_state/` 配下のみ書き込み可(実装側の状態管理に限る)。
+- 実装エージェントは **`docs/` 配下に書き込み禁止**。仕様の更新は人間または設計エージェントの責務。
+- 例外1: `docs/_impl_state/` 配下のみ書き込み可(実装側の状態管理に限る)。
+- 例外2: **`spec-change-manager` の変更管理フロー**（CR-XXX 起票 → 影響分析 → 更新 → spec-critic 再レビュー）に限り、`docs/_impl_state/.docs_edit_unlock` を立てている間だけ docs/ を更新できる。これは「実装変更に伴い docs も併せて正規に更新するエージェント」のための明示的な carve-out であり、それ以外の実装エージェントは引き続きブロックされる。
 - 仕様の不備を発見しても直接編集しない。`docs/_impl_state/spec_gaps.md` に起票して orchestrator 経由で人間にレビュー依頼。
 
 ### R-4: シークレットを書かない
@@ -263,7 +264,7 @@ hooks は2通りの方法で有効になります:
 | Hook | 発火タイミング | 役割 |
 |---|---|---|
 | `secret_guard.py` | PreToolUse(Write/Edit) | API キー等のハードコードをブロック |
-| `docs_readonly_guard.py` | PreToolUse(Write/Edit) | `docs/` 配下への書き込みをブロック(`docs/_impl_state/` 除く) |
+| `docs_readonly_guard.py` | PreToolUse(Write/Edit) | `docs/` 配下への書き込みをブロック(`docs/_impl_state/` 除く。変更管理フローが `.docs_edit_unlock` を立てている間は許可) |
 | `pii_check.py` | PreToolUse(Write/Edit) | 明らかな個人情報パターン(氏名フルネーム+電話番号など)を検出 |
 | `spec_traceability_check.py` | PostToolUse(Write/Edit) | `src/` 配下の新規/変更ファイルに `@spec` タグが含まれているかチェック |
 | `post_format.py` | PostToolUse(Write/Edit) | `*.ts`/`*.tsx`/`*.py` を保存後にフォーマッタにかける(ベストエフォート) |

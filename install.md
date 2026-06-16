@@ -184,7 +184,7 @@ impl-code-reviewer で M1 の仕様準拠チェックだけして。
 # → secret_guard.py がブロックすれば OK
 ```
 
-- `docs_readonly_guard` は `docs/_impl_state/.impl_active` マーカーがある時（=実装フェーズ中）だけブロックします。設計フェーズに戻る場合はマーカーを削除してください。
+- `docs_readonly_guard` は `docs/_impl_state/.impl_active` マーカーがある時（=実装フェーズ中）だけブロックします。設計フェーズに戻る場合はマーカーを削除してください。変更管理フロー（`spec-change-manager`）が `docs/_impl_state/.docs_edit_unlock` を立てている間は docs/ 更新が許可されます（実装変更に伴い docs も併せて更新するための例外）。
 - hooks を一時的に切りたい場合（手動配置時）は `.claude/settings.json` から該当 hook を外すか、`.claude/settings.json.disabled` にリネーム。プラグイン利用時はプラグインを無効化してください。
 
 ---

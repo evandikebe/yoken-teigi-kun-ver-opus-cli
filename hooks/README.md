@@ -9,7 +9,7 @@
 | `hooks.json` | **プラグイン用の hook 設定（command 型）**。インストールするだけで自動有効。Claude Code(CLI) では `${CLAUDE_PLUGIN_ROOT}` が展開され .py が即時実行される（高速・決定論的）。※**Cowork は変数を展開しない**ため prompt 版を使う（後述） |
 | `settings.example.json` | 手動配置用。`.claude/settings.json` の雛形 |
 | `secret_guard.py` | PreToolUse(Write/Edit): API キー・トークンらしい値のコミットをブロック |
-| `docs_readonly_guard.py` | PreToolUse(Write/Edit): `docs/` 配下への書き込みをブロック(`docs/_impl_state/` は許可)。**`docs/_impl_state/.impl_active` マーカーがある時=実装フェーズ中のみ有効**（設計フェーズの docs/ 書き込みは妨げない） |
+| `docs_readonly_guard.py` | PreToolUse(Write/Edit): `docs/` 配下への書き込みをブロック(`docs/_impl_state/` は許可)。**`docs/_impl_state/.impl_active` マーカーがある時=実装フェーズ中のみ有効**（設計フェーズの docs/ 書き込みは妨げない）。変更管理フロー(`spec-change-manager`)が `docs/_impl_state/.docs_edit_unlock` を立てている間だけ docs/ 更新を許可 |
 | `pii_check.py` | PreToolUse(Write/Edit): 明らかな個人情報パターンを検出して警告 |
 | `spec_traceability_check.py` | PostToolUse(Write/Edit): `src/` 配下の新規/変更ファイルに `@spec` タグが入っているか検証 |
 | `post_format.py` | PostToolUse(Write/Edit): `*.ts/*.tsx/*.py` を保存後にフォーマッタにかける(ベストエフォート) |
@@ -55,6 +55,7 @@ Claude Code を再起動すると hooks が有効になります。
 ## 動作の調整
 
 - **docs/ ガードの有効/無効**: `docs/_impl_state/.impl_active` マーカーで切替（impl-orchestrator が Phase A で作成。設計フェーズに戻るなら削除）。環境変数 `IMPL_DOCS_GUARD=1` で強制有効化も可
+- **docs/ ガードの一時例外（変更管理フロー専用）**: `docs/_impl_state/.docs_edit_unlock` がある間だけ docs/ 書き込みを許可。`spec-change-manager` が docs 更新の直前に作成し、完了時に削除する（`.impl_active` は触らない）
 - **PII 警告の誤検出が多い場合**: `pii_check.py` の検出パターン（`JP_PHONE` / `JP_NAME` 等）を編集
 - **PII 検出をブロックに強める**: 環境変数 `IMPL_PII_STRICT=1`
 - **`@spec` タグ警告をブロックに強める**: 環境変数 `IMPL_STRICT_TRACEABILITY=1`（デフォルトは警告のみ）

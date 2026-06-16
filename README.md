@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.10.0
+# yoken-teigi-kun（要件定義君）v0.11.0
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -205,7 +205,7 @@ tests/                      # テスト
 
 ### 実装エージェント（詳細: `references/IMPL_RULES.md`）
 - `docs/` 配下が **唯一の仕様**。実装は必ず仕様 ID に紐づく
-- `docs/` は **読み取り専用**(書けるのは `docs/_impl_state/` のみ)
+- `docs/` は **読み取り専用**(書けるのは `docs/_impl_state/` のみ。例外として変更管理フロー `spec-change-manager` が `.docs_edit_unlock` を立てている間だけ docs/ を更新できる)
 - シークレット・PII はコード/ログ/プロンプトに書かない
 - 並列実行時は **同じファイルを別エージェントに触らせない**
 - 全ファイルに `@spec` トレーサビリティタグを付与
@@ -224,6 +224,9 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.11.0
+- **docs/ 読み取り専用ガードに「変更管理フロー専用アンロック」を導入**: 従来 `spec-change-manager` は実装中に docs を更新する際 `.impl_active` マーカーを退避してガードごと無効化していた（復元忘れで docs が無防備になる footgun）。これを `docs/_impl_state/.docs_edit_unlock` を立てている間だけ docs/ 書き込みを許可する明示 carve-out に変更。`.impl_active` は触らず、**実装変更に伴い docs も併せて更新する変更管理フローだけが docs/ を編集でき、他の実装エージェントは引き続きブロック**される。`docs_readonly_guard.py` / IMPL_RULES R-3 / spec-change-manager 原則7・DoD / hooks 説明を更新
 
 ### v0.10.0
 - **メタ改善エージェント `retrospective`（自己改善ループ）を新設**: 1案件が残す検品・レビュー記録（`phase_reviews` の差し戻し・`review_findings`・`spec_gaps`・CR 台帳・`open_questions`・`incidents`）を**プラグイン自身の弱点データ**として機械集計し、再発パターンを抽出して SPEC_RULES / IMPL_RULES / エージェント定義 / テンプレ / hooks への **diff レベル改善提案**を生成。評価指標（カテゴリ別指摘件数・差し戻し回数・トレーサビリティ充足率・spec_gaps/CR 件数）でループの収束条件を定義し、**提案のみ・プラグイン本体は書き換えない人間承認ゲート**方式（暴走/劣化防止）。出力は案件直下 `retrospective/`（docs 読み取り専用ガード回避）、採否台帳は plugin 側 `improvements/`。提案テンプレ `templates/_improvement_proposal_template.md` を追加
