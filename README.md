@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.9.3
+# yoken-teigi-kun（要件定義君）v0.10.0
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -69,6 +69,14 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 | `spec-change-manager` | **仕様変更の変更管理フロー**（影響分析 → CR 記録 → 上流から更新 → critic 再レビュー） | `docs/_state/change_requests.md` |
 
 > spec-critic 以外の設計エージェントは sonnet。spec-critic はゲート役のため impl 側 reviewer と同じく opus（コスト重視なら frontmatter で sonnet に下げられる）。
+
+### メタ改善エージェント（1体・自己改善ループ）
+
+| エージェント | 役割 | 主な出力 |
+|---|---|---|
+| `retrospective` (**opus**) | **案件の検品・レビュー記録をプラグイン自身の弱点データとして集約**し、評価指標つきの改善提案を生成（提案のみ・人間承認ゲート） | `retrospective/retro-YYYY-MM-DD.md`、`improvements/`（採否台帳） |
+
+> 案件完了後に「振り返りして」「retrospective 起動して」等で単独起動。spec-critic の差し戻し・code/security 指摘・spec_gaps・CR・open_questions・インシデントから**再発パターン**を抽出し、SPEC_RULES / IMPL_RULES / エージェント定義 / テンプレ / hooks への diff レベル改善案を出す。**プラグイン本体は書き換えず**、ユーザー承認後に別セッションで反映する human-in-the-loop ループ（運用は `improvements/README.md`）。
 
 ### 実装エージェント（9体）
 
@@ -180,6 +188,7 @@ docs/
    └─ review_findings.md    # セキュリティ/コードレビュー指摘集約
 
 src/                        # 実装エージェントの出力
+retrospective/              # retrospective の振り返りレポート（任意・案件直下）
 tests/                      # テスト
 ```
 
@@ -215,6 +224,9 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.10.0
+- **メタ改善エージェント `retrospective`（自己改善ループ）を新設**: 1案件が残す検品・レビュー記録（`phase_reviews` の差し戻し・`review_findings`・`spec_gaps`・CR 台帳・`open_questions`・`incidents`）を**プラグイン自身の弱点データ**として機械集計し、再発パターンを抽出して SPEC_RULES / IMPL_RULES / エージェント定義 / テンプレ / hooks への **diff レベル改善提案**を生成。評価指標（カテゴリ別指摘件数・差し戻し回数・トレーサビリティ充足率・spec_gaps/CR 件数）でループの収束条件を定義し、**提案のみ・プラグイン本体は書き換えない人間承認ゲート**方式（暴走/劣化防止）。出力は案件直下 `retrospective/`（docs 読み取り専用ガード回避）、採否台帳は plugin 側 `improvements/`。提案テンプレ `templates/_improvement_proposal_template.md` を追加
 
 ### v0.9.3
 - **Claude Code(CLI) インストール対応 + hooks を command 型へ復帰**: `.claude-plugin/marketplace.json` を追加し、`/plugin marketplace add` → `/plugin install` で導入可能に。CLI は `${CLAUDE_PLUGIN_ROOT}` を展開するため、同梱 `hooks/hooks.json` を **command 型（.py 即時実行・遅延ゼロ）に戻した**。Cowork で使う場合は v0.9.2 の prompt 型 hooks に差し替える運用（hooks/README に環境別の使い分けを明記）
