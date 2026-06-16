@@ -6,7 +6,7 @@
 
 Claude Code / Cowork にプラグインとしてインストールするだけで:
 
-- `agents/` のサブエージェント（設計8体 + 実装9体）
+- `agents/` のサブエージェント（設計10体 + 実装9体 + メタ改善1体 retrospective）
 - `skills/`（requirements-architect / security-review / spec-traceability）
 - `hooks/hooks.json` の安全弁（シークレット / PII / docs read-only / @spec / フォーマット）
 
