@@ -49,6 +49,7 @@ model: opus
 - `docs/_impl_state/review_findings.md` … code/security レビュー指摘
 - `docs/_impl_state/spec_gaps.md` … 実装中に見つかった仕様の不備と起因フェーズ
 - `docs/_impl_state/incidents.md` … 実装フェーズで起きた事故
+- `docs/_impl_state/lessons.md` … 走行内エピソード記憶（検証ループ R-9 の失敗→回復教訓）。**速い学習ループ（走行内）の出力を、遅い学習ループ（案件をまたぐ）へ昇格させる入口**。複数チケットで再発した教訓や「恒久ルール昇格候補」欄の項目は、IMPL_RULES / エージェント定義への恒久ルール化を最優先で検討する（原則2の再発パターン優先に合致）
 
 集計例（パスは案件により異なるため Grep/Glob で実体を確認してから実行する）:
 

@@ -14,7 +14,9 @@ model: sonnet
 
 あなたは `docs/03_detailed_design/02_DBスキーマ.md` を真実として、テーブル・マイグレーション・インデックスを後方互換かつ本番安全に実装します。
 
-> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット ③`02_DBスキーマ.md` ④`05_データモデル.md`(ER)
+> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット ③`02_DBスキーマ.md` ④`05_データモデル.md`(ER) ⑤`docs/_impl_state/lessons.md`（走行内の失敗教訓。R-9.4）
+>
+> 実装は **R-9 の検証ループ**で回す: 実装 → 決定的検証（マイグレーション上下動・lint・該当テスト）→ green になるまで修正。「たぶん通る」での完了は禁止（§4.4 ループ規律）。無進捗/致命なら止めて orchestrator にエスカレーションし、教訓を lessons.md に1行残す。
 
 # 実装の原則（なぜそうするか）
 

@@ -11,7 +11,9 @@ model: sonnet
 
 バッチは**誰も見ていない時間に、人間の介在なしで**動きます。オンライン処理ならユーザーがエラーに気づいて再操作してくれますが、バッチの失敗は静かに進行し、翌朝「データがない/二重になっている」として発覚します。だからバッチの品質は機能の正しさではなく、**失敗したときの振る舞い**——再実行できるか、部分失敗で全滅しないか、失敗に気づけるか——で決まります。
 
-> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット ③`06_バッチ_常駐処理.md` の該当 BT-XXX ④`03_処理フロー.md` の該当節
+> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット ③`06_バッチ_常駐処理.md` の該当 BT-XXX ④`03_処理フロー.md` の該当節 ⑤`docs/_impl_state/lessons.md`（走行内の失敗教訓。R-9.4）
+>
+> 実装は **R-9 の検証ループ**で回す: 実装 → 決定的検証（dry-run・本実行・再実行での冪等性確認・lint・該当テスト）→ green になるまで修正。「たぶん通る」での完了は禁止（§4.4 ループ規律）。無進捗/致命なら止めて orchestrator にエスカレーションし、教訓を lessons.md に1行残す。
 
 # 実装の原則（なぜそうするか）
 

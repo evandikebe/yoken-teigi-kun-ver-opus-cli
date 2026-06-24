@@ -1,4 +1,4 @@
-# yoken-teigi-kun（要件定義君）v0.11.0
+# yoken-teigi-kun（要件定義君）v0.12.0
 
 ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
@@ -23,7 +23,10 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 - チケット駆動: 仕様を `docs/_impl_state/tickets/T-XXX.md` に分解し、依存関係を整理
 - **並列実行**: 独立したチケットを backend/frontend/db/batch/test の専門エージェントで同時に進める
 - マイルストーン末に **security-reviewer / code-reviewer** が横断レビュー
-- Claude Code hooks による **安全弁**: シークレット混入・docs/ への書き込み・PII 露出・トレーサビリティ違反をブロック（プラグインインストールだけで自動有効）
+- **検証ループ (R-9)**: 各チケットは「実装 → 決定的検証（lint/type/test/build）→ green まで修正」の周期で進め、green ログのない `done` を認めない（検証＝報酬信号）
+- **ループの終了規律 (§4.4)**: 反復上限・無進捗検知・予算ガード・回復可能/致命エラーの区別を共通ルール化し、詰まったループは人間にエスカレーション
+- **走行内 Reflexion (`lessons.md`)**: 失敗→回復の教訓を案件内で共有する速い学習ループ。retrospective の案件をまたぐ遅いループと二層で働く
+- Claude Code hooks による **安全弁**: シークレット混入・docs/ への書き込み・PII 露出・トレーサビリティ違反・**テスト弱体化（検証ループの報酬ハック）**をブロック（プラグインインストールだけで自動有効）
 
 ## 全体フロー
 
@@ -98,7 +101,7 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 
 - `references/SPEC_RULES.md` — 設計エージェント共通の対話規約（番号付き質問・最大4問 等）
 - `references/IMPL_RULES.md` — 実装エージェント共通の不変ルール（仕様駆動・トレーサビリティ・セキュリティ 等）
-- `hooks/` — Claude Code hooks。`hooks/hooks.json` によりプラグインインストールだけで自動有効（シークレット/PII/docs read-only/@spec/フォーマット）
+- `hooks/` — Claude Code hooks。`hooks/hooks.json` によりプラグインインストールだけで自動有効（シークレット/PII/docs read-only/@spec/テスト弱体化検出/フォーマット）
 - `skills/requirements-architect/` — 使い方案内スキル
 - `skills/security-review/` — OWASP セキュリティレビューのチェックリスト + 検出コマンド集
 - `skills/spec-traceability/` — 仕様 ↔ 実装 双方向トレース手順
@@ -224,6 +227,15 @@ tests/                      # テスト
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
 
 ## 変更履歴
+
+### v0.12.0
+- **ループエンジニアリングを導入（既存の harness 層の内側に loop 層を体系化）**: 最新のループエンジニアリング（act → 決定的検証 → 判断 → 終了条件まで反復）の知見を、既存の orchestrator-workers / 自己改善ループに不足していた「内側の検証ループ」として追加。
+  - **提案A 検証ループ (IMPL_RULES R-9)**: DoD（状態）に到達する周期を明文化。実装→決定的検証（lint/type/test/build）→green まで反復、検証なき `done`・報酬ハックを禁止。5 実装エンジニアの起動手順とチケットテンプレ evidence を更新
+  - **提案D ループ終了規律 (IMPL_RULES §4.4)**: 反復上限(G-1)・無進捗検知(G-2)・予算ガード(G-3)・回復可能/致命の区別(G-4)・検証なき完了の禁止(G-5)・エスカレーション優先(G-6)を共通語彙化。impl-orchestrator 原則7 を刷新
+  - **提案B 有界 Evaluator-Optimizer (spec-orchestrator 原則3 / SPEC_RULES Q-7)**: spec-critic↔designer の差し戻し往復に上限 M=2 と無進捗検知を明示。phase_review テンプレに反復回数欄を追加
+  - **提案C 走行内 Reflexion (`docs/_impl_state/lessons.md`)**: 失敗→回復の教訓を案件内で共有する速い学習ループを新設。retrospective が入力に取り込み恒久ルールへ昇格（遅いループへの橋渡し）。テンプレ `_impl_state_lessons_template.md` を追加
+  - **提案E 報酬ハック防止 hook (`hooks/verification_guard.py`)**: テスト削除・`skip`/`xfail`/`only` 付与・アサーション削除を検出（デフォルト警告 / `IMPL_VERIFICATION_STRICT=1` でブロック）。`hooks.json` / `settings.example.json` / hooks README に登録
+  - 設計の経緯は `LOOP_ENGINEERING_DESIGN.md`、採否は `improvements/README.md` の台帳に記録
 
 ### v0.11.0
 - **docs/ 読み取り専用ガードに「変更管理フロー専用アンロック」を導入**: 従来 `spec-change-manager` は実装中に docs を更新する際 `.impl_active` マーカーを退避してガードごと無効化していた（復元忘れで docs が無防備になる footgun）。これを `docs/_impl_state/.docs_edit_unlock` を立てている間だけ docs/ 書き込みを許可する明示 carve-out に変更。`.impl_active` は触らず、**実装変更に伴い docs も併せて更新する変更管理フローだけが docs/ を編集でき、他の実装エージェントは引き続きブロック**される。`docs_readonly_guard.py` / IMPL_RULES R-3 / spec-change-manager 原則7・DoD / hooks 説明を更新

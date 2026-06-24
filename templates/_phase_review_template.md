@@ -3,6 +3,7 @@
 - レビュー実施: YYYY-MM-DD HH:MM
 - レビュアー: spec-critic
 - 対象フェーズ: Phase <N>（<フェーズ名>）
+- 反復回数: 第 k 回 / 上限 M=2（有界 Evaluator-Optimizer ループ。spec-orchestrator 原則3）
 - 対象成果物:
   - docs/...
   - docs/...
@@ -56,7 +57,9 @@
 
 ## 再レビュー記録（差し戻し時のみ追記）
 
-| 回 | 日時 | 判定 | メモ |
-|---|---|---|---|
-| 1 | YYYY-MM-DD HH:MM | FAIL | 初回 |
-| 2 | | | |
+> 無進捗判定: 同一カテゴリの BLOCKER が2回連続で残っていたら、ループを止めて orchestrator → ユーザーへエスカレーション（spec-orchestrator 原則3）。
+
+| 回 | 日時 | 判定 | 前回 FAIL からの差分（無進捗判定用） | メモ |
+|---|---|---|---|---|
+| 1 | YYYY-MM-DD HH:MM | FAIL | —（初回） | 初回 |
+| 2 | | | <解消した BLOCKER / 残存・再発した BLOCKER カテゴリ> | |

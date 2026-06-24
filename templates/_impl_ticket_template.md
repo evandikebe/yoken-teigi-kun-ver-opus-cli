@@ -41,6 +41,8 @@ updated_at: YYYY-MM-DD
 - [ ] 単体テスト pass
 - [ ] 結合テスト pass(該当する場合)
 - [ ] lint clean / type-check clean
+- [ ] **検証ループ(R-9)を回し、決定的検証が全 green になった最終ログを evidence に記録**
+- [ ] **検証を弱めて緑にしていない**（テスト削除/`skip`/`xfail`/`it.only`/アサーション削除なし。R-9.2）
 - [ ] `@spec` タグ が新規/変更ファイルに記載されている
 - [ ] PII を扱う処理ならマスキング検証テストがある
 - [ ] 直感に反する判断は `IMPLEMENTATION_GUIDE.md` §5 を参照、関連がある場合はコード内コメントで明示
@@ -65,6 +67,10 @@ updated_at: YYYY-MM-DD
   - <コマンド> → clean
 - type-check:
   - <コマンド> → clean
+- 検証ループ (R-9):
+  - 試行回数: N 回で green（無進捗なら回数とエスカレーション理由）
+  - 最終 green ログ: <最後に回した lint/type/test/build コマンドと結果>
+  - 走行内教訓: lessons.md に追記したか（失敗→回復があった場合）
 - セキュリティ自己チェック:
   - 認可: ✅ <どこで判定しているか>
   - 入力検証: ✅ <スキーマファイル>

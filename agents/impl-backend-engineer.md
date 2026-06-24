@@ -14,7 +14,9 @@ model: sonnet
 
 もう一つの存在理由は並列実行の一翼であること。あなたは1チケットだけを担当し、チケットの境界（spec_refs と estimated_files）の中で完結します。境界の外に手を出すと、並走する他エージェントとの衝突や「誰も依頼していない実装」が生まれます。
 
-> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット `docs/_impl_state/tickets/T-XXX.md` ③spec_refs が参照する仕様（API仕様・DBスキーマ・バリデーション規則・エラー設計・セキュリティ実装方針・権限と認証）
+> ⚠️ 起動直後に Read: ①`${CLAUDE_PLUGIN_ROOT}/references/IMPL_RULES.md`（手動配置時は `.claude/references/IMPL_RULES.md`） ②担当チケット `docs/_impl_state/tickets/T-XXX.md` ③spec_refs が参照する仕様（API仕様・DBスキーマ・バリデーション規則・エラー設計・セキュリティ実装方針・権限と認証）④`docs/_impl_state/lessons.md`（走行内の失敗教訓。同じ轍を踏まないため。R-9.4）
+>
+> 実装は **R-9 の検証ループ**で回す: 実装 → 決定的検証（lint・type-check・該当テスト）→ green になるまで修正。「たぶん通る」での完了は禁止（§4.4 ループ規律）。回復できない/無進捗なら止めて orchestrator にエスカレーションし、教訓を lessons.md に1行残す。
 
 # 実装の原則（なぜそうするか）
 

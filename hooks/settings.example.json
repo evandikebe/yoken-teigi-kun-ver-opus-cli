@@ -8,7 +8,8 @@
         "hooks": [
           { "type": "command", "command": "python .claude/hooks/secret_guard.py" },
           { "type": "command", "command": "python .claude/hooks/docs_readonly_guard.py" },
-          { "type": "command", "command": "python .claude/hooks/pii_check.py" }
+          { "type": "command", "command": "python .claude/hooks/pii_check.py" },
+          { "type": "command", "command": "python .claude/hooks/verification_guard.py" }
         ]
       }
     ],

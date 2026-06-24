@@ -11,6 +11,7 @@
 | `secret_guard.py` | PreToolUse(Write/Edit): API キー・トークンらしい値のコミットをブロック |
 | `docs_readonly_guard.py` | PreToolUse(Write/Edit): `docs/` 配下への書き込みをブロック(`docs/_impl_state/` は許可)。**`docs/_impl_state/.impl_active` マーカーがある時=実装フェーズ中のみ有効**（設計フェーズの docs/ 書き込みは妨げない）。変更管理フロー(`spec-change-manager`)が `docs/_impl_state/.docs_edit_unlock` を立てている間だけ docs/ 更新を許可 |
 | `pii_check.py` | PreToolUse(Write/Edit): 明らかな個人情報パターンを検出して警告 |
+| `verification_guard.py` | PreToolUse(Write/Edit): テストファイルの削除・`skip`/`xfail`/`only` 付与・アサーション削除を検出（検証ループ R-9 の報酬ハック防止）。デフォルト警告、`IMPL_VERIFICATION_STRICT=1` でブロック |
 | `spec_traceability_check.py` | PostToolUse(Write/Edit): `src/` 配下の新規/変更ファイルに `@spec` タグが入っているか検証 |
 | `post_format.py` | PostToolUse(Write/Edit): `*.ts/*.tsx/*.py` を保存後にフォーマッタにかける(ベストエフォート) |
 
@@ -48,7 +49,7 @@ Claude Code を再起動すると hooks が有効になります。
 | **Claude Code (CLI)** | **command 型（同梱の `hooks.json`）** | CLI は `${CLAUDE_PLUGIN_ROOT}` を正しく展開する。.py が即時実行され遅延ゼロ・決定論的。これが既定 |
 | **Cowork (デスクトップ)** | **prompt 型（別ビルド）** | Cowork は `${CLAUDE_PLUGIN_ROOT}` を展開しないため command 型は失敗する。LLM 判定型の prompt 版を使う |
 
-同梱の `hooks.json` は **command 型**（CLI 既定）。Cowork で使う場合は、4 つの判定を 1 本の PreToolUse prompt フックに統合した prompt 版 `hooks.json` に差し替えること（`secret_guard`/`docs_readonly_guard`/`pii_check`/`spec_traceability` を統合。`post_format` は prompt 化不可のため除外）。
+同梱の `hooks.json` は **command 型**（CLI 既定）。Cowork で使う場合は、判定群を 1 本の PreToolUse prompt フックに統合した prompt 版 `hooks.json` に差し替えること（`secret_guard`/`docs_readonly_guard`/`pii_check`/`verification_guard`/`spec_traceability` を統合。`post_format` は prompt 化不可のため除外）。
 
 **なぜ分けるのか**: command 型は `python "${CLAUDE_PLUGIN_ROOT}/hooks/xxx.py"` のようにスクリプトの絶対パスを要する。Cowork のフックランナーは `${CLAUDE_PLUGIN_ROOT}` を展開しないので未展開リテラルが相対パス化し全 hook が失敗する。prompt 型はパス参照が不要なのでこの問題が起きない代わりに、Write/Edit ごとに LLM 評価が 1 回入り僅かに遅い。
 
@@ -59,6 +60,7 @@ Claude Code を再起動すると hooks が有効になります。
 - **PII 警告の誤検出が多い場合**: `pii_check.py` の検出パターン（`JP_PHONE` / `JP_NAME` 等）を編集
 - **PII 検出をブロックに強める**: 環境変数 `IMPL_PII_STRICT=1`
 - **`@spec` タグ警告をブロックに強める**: 環境変数 `IMPL_STRICT_TRACEABILITY=1`（デフォルトは警告のみ）
+- **テスト弱体化の検出をブロックに強める**: 環境変数 `IMPL_VERIFICATION_STRICT=1`（デフォルトは警告のみ。`verification_guard.py`。テストを正当に削除/整理したいときは一時的に外す）
 - **フォーマッタ未導入で `post_format.py` が失敗する場合**: そのまま放置でよい（フォーマッタが見つからなければ何もせず終了する）
 
 ## ブロック vs 警告

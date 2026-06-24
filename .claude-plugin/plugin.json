@@ -1,7 +1,7 @@
 {
   "name": "yoken-teigi-kun",
-  "version": "0.11.0",
-  "description": "ITシステムの構成精査→要件定義→基本設計→詳細設計→画面モック→コスト概算→実装までを一気通貫で完成させるエージェント群。設計10体（アンチレビューゲート spec-critic・変更管理 spec-change-manager 含む）+実装9体+メタ改善1体（自己改善ループ retrospective）、セキュリティhooks、案内スキル。セッションを跨ぐ再開プロトコルと仕様変更フロー（CR管理）を備える。質問はチャットに番号付きで提示する対話方式。docs/=設計、src/=コードの厳密分離とgit管理を徹底。",
+  "version": "0.12.0",
+  "description": "ITシステムの構成精査→要件定義→基本設計→詳細設計→画面モック→コスト概算→実装までを一気通貫で完成させるエージェント群。設計10体（アンチレビューゲート spec-critic・変更管理 spec-change-manager 含む）+実装9体+メタ改善1体（自己改善ループ retrospective）、セキュリティhooks、案内スキル。ループエンジニアリングを導入: 実装の検証ループ(R-9)・終了/無進捗/予算ガード(§4.4)・設計の有界 Evaluator-Optimizer・走行内 Reflexion(lessons.md)・報酬ハック防止hook。セッションを跨ぐ再開プロトコルと仕様変更フロー（CR管理）を備える。質問はチャットに番号付きで提示する対話方式。docs/=設計、src/=コードの厳密分離とgit管理を徹底。",
   "author": {
     "name": "ShunIkebeEv"
   },
@@ -12,6 +12,7 @@
     "agile",
     "japanese",
     "solution-architecture",
-    "cost-estimate"
+    "cost-estimate",
+    "loop-engineering"
   ]
 }
