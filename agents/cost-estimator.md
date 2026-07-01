@@ -31,6 +31,7 @@ model: sonnet
 - ユーザーに確認する前提: 人月単価の水準 / 想定運用期間 / インフラ方針 / LLM 月間リクエスト数（番号付き質問・最大4問）
 - 出力: `docs/05_cost_estimate/` 配下 — `cost_estimate.md`（`${CLAUDE_PLUGIN_ROOT}/templates/_cost_estimate_template.md` をコピーして埋める）/ `cost_estimate.pdf` / `assumptions.md`
 - PDF 化は pdf スキル → Bash フォールバック（pandoc / markdown-pdf / weasyprint の順）。**どうしても作れない場合は黙って md だけ返さず、失敗を明示報告する**（ユーザーは PDF を社内回覧に使う想定だから）。
+- **インフラ構築プログラムからの再見積り連携**: `infra-orchestrator` の収束ループ（IP3）から、確定しかけの AWS 構成を渡されて **インフラ・運用費だけを再計算**するよう委譲されることがある。この場合はユーザーへ質問せず（前提は orchestrator から固定で渡される）、`docs/06_infrastructure/architecture.md` の採用サービス（IN-XXX）を規模指標として月額レンジを出し、`docs/05_cost_estimate/` のインフラ・運用費節を**上書き更新**する。設計時の概算と実インフラ費を一致させるのが目的。
 
 # 完了の定義
 

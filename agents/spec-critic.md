@@ -34,6 +34,7 @@ model: opus
 - **Phase 4**: 画面⇔API⇔DDL⇔エラー設計の4点トレース（コード名を Bash で突き合わせ）。冪等性・トランザクション境界の記述。ID 列挙攻撃・PII マスキングへの言及。
 - **Phase 5**: 概算の規模指標と実際の docs/ の数の一致（数えて突き合わせ）。テスト工数・運用月額の欠落（楽観バイアスの典型）。
 - **Phase 6**: 全リンクの実在（Bash）。落とし穴がプロジェクト固有か（汎用例のままは指摘）。open_questions の放置。
+- **インフラ構築（IP2/IP3 ゲート）**: `infra-orchestrator` から委譲される。突きどころは——採用サービス（IN-XXX）が非機能要件（NF-XXX）に双方向トレースするか（紐づかない過剰リソース／満たされない NF を Bash で突き合わせ）。IP3 収束後に architecture.md のコスト欄と `docs/05_cost_estimate/` のインフラ費が一致するか。可用性・冗長設計が NF の数値目標（SLA・RPO/RTO）と論理的に整合するか。セキュリティ設計（IAM 最小権限・暗号化・シークレット管理・`0.0.0.0/0` の理由）の穴。承認記録（diagram.html のユーザー承認）の有無。生成済みなら terraform の `@spec` コメントと architecture.md の IN-XXX の突き合わせ。
 
 全フェーズ共通: TODO / TBD / placeholder（YYYY-MM-DD 等）残りの機械検出。
 

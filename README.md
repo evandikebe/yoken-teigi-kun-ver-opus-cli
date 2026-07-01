@@ -1,6 +1,6 @@
-# yoken-teigi-kun（要件定義君）v0.12.0
+# yoken-teigi-kun（要件定義君）v0.13.0
 
-ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
+ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設計 → 画面モック → コスト概算 → 開発向け実装ガイド → 実装 → AWSインフラ構築** までを、ユーザーと対話しながら一気通貫で完成させる Claude Code プラグイン（サブエージェント群 + hooks + skills）です。
 
 ## 何ができるか
 
@@ -28,6 +28,14 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 - **走行内 Reflexion (`lessons.md`)**: 失敗→回復の教訓を案件内で共有する速い学習ループ。retrospective の案件をまたぐ遅いループと二層で働く
 - Claude Code hooks による **安全弁**: シークレット混入・docs/ への書き込み・PII 露出・トレーサビリティ違反・**テスト弱体化（検証ループの報酬ハック）**をブロック（プラグインインストールだけで自動有効）
 
+### インフラ構築フェーズ
+
+- 設計 `docs/`（特に非機能要件 NF-XXX）を入力に、AWS のインフラ構成を設計し **承認用の HTML 図解** を出力（実装 `src/` の完成は必須ではない）
+- **NF × 構成 × コストの収束ループ (IP3)**: 「非機能要件・インフラ構成・コスト」は相互依存するため、矛盾（予算超過など）が消えるまで反復し、精度を高めてから確定させる。予算超過時は **(1)予算UP / (2)NF緩和 / (3)構成簡素化** の3択をユーザーに提示
+- **承認ゲート**: `diagram.html` をユーザーが承認し spec-critic が PASS するまで **Terraform を書かない**
+- 承認後、`terraform/` をモジュール分割構成で生成（各リソースに `@spec IN-XXX <- NF-XXX` コメントで由来を記録）
+- CI/CD パイプラインとデプロイ手順書まで出力（**OIDC 鍵レス既定**・シークレット非コミット）。`terraform apply` / 実デプロイは手順書に従いユーザーが実行
+
 ## 全体フロー
 
 ```
@@ -46,6 +54,18 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 [Phase 6] 実装ガイド                ← spec-handoff-writer
             ↓
 （実装フェーズ）                    ← impl-orchestrator 配下のエージェント群
+            ↓
+（インフラ構築フェーズ）            ← infra-orchestrator 配下のエージェント群
+
+[IP1/IP2] 棚卸し + 構成ドラフト     ← infra-architect（architecture.md + diagram.html）
+            ↓
+[IP3] 収束ループ (NF×構成×コスト)   ← infra-orchestrator がインライン制御 / cost-estimator 再見積り
+            ↓ ユーザー承認 + spec-critic PASS
+[IP4] Terraform 生成                ← terraform-generator（terraform/ モジュール分割）
+            ↓
+[IP5] CI/CD + デプロイ手順          ← deployment-engineer（.github/workflows/ + deployment.md）
+            ↓
+[IP6] 検品                          ← spec-critic / impl-security-reviewer
 ```
 
 > **各フェーズの完了時に `spec-critic` がアンチレビュー**（不足・不整合・設計脆弱性の検品）を行い、BLOCKER があればフェーズを差し戻す。PASS するまで次フェーズに進まない。
@@ -97,10 +117,22 @@ ITシステムの **構成精査 → 要件定義 → 基本設計 → 詳細設
 
 > 💡 モデル配分の設計: ゲート役 3 体(orchestrator + 2 reviewer)を opus に集約、実装役 6 体は sonnet。高度な判断は常にエスカレーション経路で opus に流れる構造。詳細は `references/IMPL_RULES.md §6.5`。
 
+### インフラ構築エージェント（4体）
+
+| エージェント | モデル | 役割 | 主な出力 |
+|---|---|---|---|
+| `infra-orchestrator` | **opus** | 全体統括。IP3 収束ループ（NF×構成×コスト）と承認ゲートをインライン制御 | `docs/06_infrastructure/reconciliation_log.md`, `docs/_state/phase_status.md`（インフラ節） |
+| `infra-architect` | **opus** | 棚卸し + AWS 構成設計 + 承認用 HTML 図解（IN-XXX を NF-XXX に紐付け） | `docs/06_infrastructure/architecture.md`, `diagram.html` |
+| `terraform-generator` | sonnet | 承認後にモジュール分割 Terraform を生成（`@spec` コメント付き） | `terraform/`（modules/ + environments/） |
+| `deployment-engineer` | sonnet | CI/CD パイプライン + デプロイ手順書（OIDC 鍵レス既定） | `.github/workflows/`, `docs/06_infrastructure/deployment.md` |
+
+> 💡 検品は設計フェーズの `spec-critic` と実装フェーズの `impl-security-reviewer` を再利用（IP6）。要件・コストの再見直しは `requirements-analyst`（NF-XXX 更新）と `cost-estimator`（インフラ費再見積り）に連携。共通ルールは `references/INFRA_RULES.md`。
+
 ### 共通基盤
 
 - `references/SPEC_RULES.md` — 設計エージェント共通の対話規約（番号付き質問・最大4問 等）
 - `references/IMPL_RULES.md` — 実装エージェント共通の不変ルール（仕様駆動・トレーサビリティ・セキュリティ 等）
+- `references/INFRA_RULES.md` — インフラ構築エージェント共通の不変ルール（承認ゲート・NF×構成×コスト収束・@spec(IN-XXX)・OIDC 鍵レス 等）
 - `hooks/` — Claude Code hooks。`hooks/hooks.json` によりプラグインインストールだけで自動有効（シークレット/PII/docs read-only/@spec/テスト弱体化検出/フォーマット）
 - `skills/requirements-architect/` — 使い方案内スキル
 - `skills/security-review/` — OWASP セキュリティレビューのチェックリスト + 検出コマンド集
@@ -179,6 +211,13 @@ docs/
 │  ├─ cost_estimate.md
 │  ├─ cost_estimate.pdf
 │  └─ assumptions.md
+├─ 06_infrastructure/       # インフラ構築（infra-orchestrator）
+│  ├─ infra_inventory.md    # 棚卸し
+│  ├─ architecture.md       # 構成設計書（IN-XXX ← NF-XXX）
+│  ├─ diagram.html          # 承認用 HTML 図解
+│  ├─ reconciliation_log.md # NF×構成×コスト 収束ログ
+│  ├─ deployment.md         # デプロイ手順書（ランブック）
+│  └─ infra_review.md       # IP6 検品結果
 ├─ IMPLEMENTATION_GUIDE.md  # 実装エージェント向け
 ├─ _state/                  # 設計フェーズの Q&A ログ・未解決事項・進捗
 │  ├─ change_requests.md    # 仕様変更の台帳（CR-XXX）
@@ -191,6 +230,8 @@ docs/
    └─ review_findings.md    # セキュリティ/コードレビュー指摘集約
 
 src/                        # 実装エージェントの出力
+terraform/                  # インフラエージェントの出力（modules/ + environments/）
+.github/workflows/          # CI/CD パイプライン（deployment-engineer）
 retrospective/              # retrospective の振り返りレポート（任意・案件直下）
 tests/                      # テスト
 ```
@@ -214,6 +255,13 @@ tests/                      # テスト
 - 全ファイルに `@spec` トレーサビリティタグを付与
 - マイルストーン末にセキュリティ + コードレビューを必ず走らせる
 
+### インフラ構築エージェント（詳細: `references/INFRA_RULES.md`）
+- **承認なしに Terraform を書かない**（`diagram.html` のユーザー承認 + spec-critic PASS が前提）
+- 非機能要件・構成・コストは **矛盾が消えるまで収束させてから確定**（IP3・上限 M=3 周）
+- インフラ要素に `IN-XXX` を振り、Terraform リソースに `@spec IN-XXX <- NF-XXX` コメントで由来を残す
+- 機密値は直書きせず、クラウド認証は **OIDC 鍵レス** を既定に
+- `terraform apply` / 実デプロイはこのチームでは実行しない（手順書に従いユーザーが実行）
+
 ## カスタマイズ
 
 - 設計エージェント共通の対話規約を変えたい → `references/SPEC_RULES.md` を編集
@@ -225,8 +273,19 @@ tests/                      # テスト
 - 実装の出力先を変えたい → `references/IMPL_RULES.md` R-7 と `agents/impl-ticket-planner.md` の `estimated_files` 既定値を編集
 - hook の検出パターンを調整したい → `hooks/*.py` を編集
 - セキュリティチェックリストを増減 → `skills/security-review/SKILL.md` を編集
+- インフラ構築の不変ルールを変えたい → `references/INFRA_RULES.md` を編集
+- 生成する Terraform のモジュール構成を変えたい → `agents/terraform-generator.md` の「生成するディレクトリ構成」を編集
+- クラウドを AWS 以外にも広げたい → `agents/infra-architect.md` / `agents/terraform-generator.md` のプロバイダ前提を編集
 
 ## 変更履歴
+
+### v0.13.0
+- **インフラ構築フェーズ（第3プログラム）を新設**: 設計 `docs/` を入力に AWS インフラを構成・IaC 化する 4 エージェントを追加。実装（`impl-orchestrator`）と同格の `infra-orchestrator` を起点に、`impl-orchestrator` の完了報告から案内される。
+  - **新規 4 エージェント**: `infra-orchestrator`（opus・統括）/ `infra-architect`（opus・構成設計 + HTML 図解）/ `terraform-generator`（sonnet・IaC 生成）/ `deployment-engineer`（sonnet・CI/CD + 手順書）。Terraform チーム由来の設計を yoken 規約（@spec・docs 集約・モデル明示・共通タグ）に合わせて移植
+  - **NF×構成×コスト 収束ループ (IP3)**: 相互依存する 3 点を矛盾が消えるまで反復（上限 M=3）してから確定。予算超過時は (1)予算UP / (2)NF緩和 / (3)構成簡素化 の 3 択をユーザーに提示。`cost-estimator` にインフラ費の再見積りを、NF の見直しは `requirements-analyst`（NF-XXX 更新）に連携
+  - **承認ゲート**: `diagram.html` のユーザー承認 + `spec-critic` PASS まで Terraform を書かない。検品は既存の `spec-critic` / `impl-security-reviewer` を再利用（IP6）
+  - **トレーサビリティ / セキュリティ**: インフラ要素に `IN-XXX` を付与し `@spec IN-XXX <- NF-XXX` で由来を記録。OIDC 鍵レス既定・シークレット非コミット
+  - **新規 `references/INFRA_RULES.md`**（SPEC/IMPL に続く第3の共通ルール）、成果物は `docs/06_infrastructure/` + `terraform/` + `.github/workflows/`。`install.md` にインフラ起動手順を追記
 
 ### v0.12.0
 - **ループエンジニアリングを導入（既存の harness 層の内側に loop 層を体系化）**: 最新のループエンジニアリング（act → 決定的検証 → 判断 → 終了条件まで反復）の知見を、既存の orchestrator-workers / 自己改善ループに不足していた「内側の検証ループ」として追加。
